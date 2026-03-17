@@ -45,8 +45,10 @@ export default function ControlPanel({
   pointSize, onPointSizeChange,
   mode, onModeChange,
   maxRange, onMaxRangeChange,
-  onRunICP, onICPStep, icpIter,
+  onRunICP, onICPStep, icpIter, icpRunning,
   hasTransformed,
+  maxIter, onMaxIterChange,
+  convThreshExp, onConvThreshExpChange,
 }) {
   const setR = (idx, val) => {
     const r = [...rotation];
@@ -112,8 +114,15 @@ export default function ControlPanel({
         </div>
       ) : (
         <div className="section">
-          <h3>Max Search Range</h3>
+          <h3>ICP Parameters</h3>
           <SliderRow label="r" value={maxRange} onChange={onMaxRangeChange} min={0.01} max={2.0} step={0.01} />
+          <SliderRow label="N" value={maxIter} onChange={onMaxIterChange} min={1} max={100} step={1} />
+          <div className="slider-row">
+            <label>thr</label>
+            <input type="range" min={2} max={8} step={1} value={convThreshExp}
+              onChange={e => onConvThreshExpChange(parseInt(e.target.value))} />
+            <span className="thresh-label">1e-{convThreshExp}</span>
+          </div>
         </div>
       )}
 
@@ -128,10 +137,10 @@ export default function ControlPanel({
         </button>
         {mode === 'unknown' && (
           <>
-            <button className="btn btn-register" onClick={onRunICP} disabled={!hasTransformed}>
-              Run Full ICP
+            <button className={`btn ${icpRunning ? 'btn-stop' : 'btn-register'}`} onClick={onRunICP} disabled={!hasTransformed}>
+              {icpRunning ? 'Stop ICP' : 'Run ICP'}
             </button>
-            <button className="btn btn-step" onClick={onICPStep} disabled={!hasTransformed}>
+            <button className="btn btn-step" onClick={onICPStep} disabled={!hasTransformed || icpRunning}>
               +1 Iteration {icpIter > 0 && `(${icpIter})`}
             </button>
           </>

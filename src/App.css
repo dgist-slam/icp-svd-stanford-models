@@ -213,11 +213,26 @@
 }
 .btn-register:hover:not(:disabled) { background: #3377dd; }
 
+.btn-stop {
+  background: #cc3333;
+  color: #fff;
+}
+.btn-stop:hover:not(:disabled) { background: #dd4444; }
+
 .btn-step {
   background: #336644;
   color: #fff;
 }
 .btn-step:hover:not(:disabled) { background: #447755; }
+
+.thresh-label {
+  width: 56px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #e0e0e0;
+  text-align: right;
+  flex-shrink: 0;
+}
 
 /* Legend */
 .legend {

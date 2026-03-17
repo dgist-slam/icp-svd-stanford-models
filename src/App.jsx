@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Viewer3D from './Viewer3D';
 import ControlPanel from './ControlPanel';
 import MathPanel from './MathPanel';
@@ -24,8 +24,12 @@ function App() {
   const [mode, setMode] = useState('known');       // 'known' | 'unknown'
   const [maxRange, setMaxRange] = useState(0.5);
   const [nnCorrespondences, setNnCorrespondences] = useState(null);
-  const [icpCurrent, setIcpCurrent] = useState(null);  // current source positions during ICP stepping
+  const [icpCurrent, setIcpCurrent] = useState(null);
   const [icpIter, setIcpIter] = useState(0);
+  const [icpRunning, setIcpRunning] = useState(false);
+  const [maxIter, setMaxIter] = useState(30);
+  const [convThreshExp, setConvThreshExp] = useState(6); // 1e-6
+  const icpPrevError = useRef(Infinity);
 
   useEffect(() => {
     async function loadAll() {
@@ -69,6 +73,8 @@ function App() {
     setNnCorrespondences(null);
     setIcpCurrent(null);
     setIcpIter(0);
+    setIcpRunning(false);
+    icpPrevError.current = Infinity;
   }, [models, selectedModel, rotation, translation]);
 
   const handleRandom = useCallback(() => {
@@ -102,20 +108,15 @@ function App() {
 
   const handleRunICP = useCallback(() => {
     if (!transformed) return;
-    const original = models[selectedModel];
-    const icpResult = runICP(transformed, original, maxRange);
-    setRegistered(icpResult.registered);
-    setRegResult(icpResult.result);
-    setIcpCurrent(icpResult.registered);
+    if (icpRunning) { setIcpRunning(false); return; } // toggle stop
+    setIcpCurrent(null);
     setIcpIter(0);
-    setOutlierMask(null);
-    setCorruptedTarget(null);
-    setNnCorrespondences(icpResult.correspondences);
-    setShowMath(true);
-  }, [models, selectedModel, transformed, maxRange]);
+    icpPrevError.current = Infinity;
+    setIcpRunning(true);
+  }, [transformed, icpRunning]);
 
   const handleICPStep = useCallback(() => {
-    if (!transformed) return;
+    if (!transformed || icpRunning) return;
     const original = models[selectedModel];
     const source = icpCurrent || transformed;
     const stepResult = icpStep(source, original, maxRange);
@@ -128,7 +129,37 @@ function App() {
     setCorruptedTarget(null);
     setNnCorrespondences(stepResult.correspondences);
     setShowMath(true);
-  }, [models, selectedModel, transformed, icpCurrent, maxRange]);
+    icpPrevError.current = stepResult.error;
+  }, [models, selectedModel, transformed, icpCurrent, maxRange, icpRunning]);
+
+  // Animated ICP: each tick runs one step, re-triggers via icpIter change
+  useEffect(() => {
+    if (!icpRunning || !transformed) return;
+    const timer = setTimeout(() => {
+      const original = models[selectedModel];
+      const source = icpCurrent || transformed;
+      const stepResult = icpStep(source, original, maxRange);
+      if (!stepResult) { setIcpRunning(false); return; }
+
+      const prevErr = icpPrevError.current;
+      icpPrevError.current = stepResult.error;
+
+      setRegistered(stepResult.registered);
+      setRegResult(stepResult.result);
+      setIcpCurrent(stepResult.registered);
+      setIcpIter(prev => prev + 1);
+      setOutlierMask(null);
+      setCorruptedTarget(null);
+      setNnCorrespondences(stepResult.correspondences);
+      setShowMath(true);
+
+      const thresh = Math.pow(10, -convThreshExp);
+      if (icpIter + 1 >= maxIter || Math.abs(prevErr - stepResult.error) < thresh) {
+        setIcpRunning(false);
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [icpRunning, icpIter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-run registration when outlier ratio changes (known mode)
   useEffect(() => {
@@ -196,7 +227,12 @@ function App() {
           onRunICP={handleRunICP}
           onICPStep={handleICPStep}
           icpIter={icpIter}
+          icpRunning={icpRunning}
           hasTransformed={!!transformed}
+          maxIter={maxIter}
+          onMaxIterChange={setMaxIter}
+          convThreshExp={convThreshExp}
+          onConvThreshExpChange={setConvThreshExp}
         />
       </div>
     </div>
