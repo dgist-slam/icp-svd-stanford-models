@@ -35,7 +35,7 @@ export default function MathPanel({ result, onClose }) {
           <p style={{ color: '#666', fontSize: 13 }}>Run registration to see the SVD math breakdown.</p>
         </div>
       ) : (() => {
-        const { R, t, H, U, S, V, centroidP, centroidQ, error } = result;
+        const { R, t, H, U, S, V, W, centroidP, centroidQ, error } = result;
         return (<>
 
         <div className="math-step">
@@ -69,7 +69,9 @@ export default function MathPanel({ result, onClose }) {
 
         <div className="math-step">
           <div className="step-label">Step 5: Optimal Rotation</div>
-          <Tex display math={`R^* = V \\, U^\\top = ${matTex(R)}`} />
+          <Tex display math={`W^* = \\text{diag}(1,\\,1,\\,\\det(VU^\\top))`} />
+          {W && <Tex display math={`= ${diagTex([W[0][0], W[1][1], W[2][2]], 0)}`} />}
+          <Tex display math={`R^* = V \\, W^* \\, U^\\top = ${matTex(R)}`} />
         </div>
 
         <div className="math-step">

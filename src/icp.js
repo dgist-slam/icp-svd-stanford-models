@@ -251,15 +251,10 @@ export function registerSVD(source, target) {
   // Step 4: SVD of H
   const { U, S, V } = svd3x3(H);
 
-  // Step 5: R = V * U^T, with reflection correction
-  let R = matMul3(V, transpose3(U));
-  if (det3(R) < 0) {
-    // Flip sign of last column of V
-    V[0][2] *= -1;
-    V[1][2] *= -1;
-    V[2][2] *= -1;
-    R = matMul3(V, transpose3(U));
-  }
+  // Step 5: R = V * W* * U^T, where W* = diag(1, 1, det(VU^T))
+  const detVU = det3(matMul3(V, transpose3(U)));
+  const W = [[1,0,0],[0,1,0],[0,0, detVU > 0 ? 1 : -1]];
+  const R = matMul3(matMul3(V, W), transpose3(U));
 
   // Step 6: t = centroidQ - R * centroidP
   const RcP = matVec3(R, centroidP);
@@ -277,7 +272,7 @@ export function registerSVD(source, target) {
   error /= N;
 
   return {
-    R, t, H, U, S, V, centroidP, centroidQ, error, registered
+    R, t, H, U, S, V, W, centroidP, centroidQ, error, registered
   };
 }
 
