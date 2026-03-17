@@ -116,9 +116,9 @@ function App() {
     }
   }, [mode, runKnownRegistration, runUnknownRegistration, outlierRatio]);
 
-  // Re-run registration when outlier ratio changes (known mode, if already registered)
+  // Auto-run registration when outlier ratio changes (known mode)
   useEffect(() => {
-    if (registered && mode === 'known') runKnownRegistration(outlierRatio);
+    if (transformed && mode === 'known') runKnownRegistration(outlierRatio);
   }, [outlierRatio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
