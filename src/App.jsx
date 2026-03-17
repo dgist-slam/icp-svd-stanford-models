@@ -23,7 +23,7 @@ function App() {
       const loaded = {};
       for (const name of MODEL_NAMES) {
         try {
-          const res = await fetch(`/models/${name}.json`);
+          const res = await fetch(`${import.meta.env.BASE_URL}models/${name}.json`);
           const data = await res.json();
           loaded[name] = data.points;
         } catch (e) {
