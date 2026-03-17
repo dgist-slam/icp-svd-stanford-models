@@ -75,18 +75,27 @@ function App() {
     setOutlierMask(null);
   }, [models, selectedModel, rotation, translation]);
 
-  const handleRegister = useCallback(() => {
+  const runRegistration = useCallback((ratio) => {
     if (!transformed) return;
     const original = models[selectedModel];
     const { corruptedTarget, outlierMask: mask } = corruptCorrespondences(
-      transformed, original, outlierRatio / 100
+      transformed, original, ratio / 100
     );
     const result = registerSVD(transformed, corruptedTarget);
     setRegistered(result.registered);
     setRegResult(result);
     setOutlierMask(mask);
     setShowMath(true);
-  }, [models, selectedModel, transformed, outlierRatio]);
+  }, [models, selectedModel, transformed]);
+
+  const handleRegister = useCallback(() => {
+    runRegistration(outlierRatio);
+  }, [runRegistration, outlierRatio]);
+
+  // Re-run registration when outlier ratio changes (if already registered)
+  useEffect(() => {
+    if (registered) runRegistration(outlierRatio);
+  }, [outlierRatio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
