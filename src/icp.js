@@ -156,6 +156,10 @@ export function svd3x3(A_in) {
 }
 
 // --- Corrupt correspondences (introduce false matches) ---
+// Maps outlier source points to biased actual target points (not random 3D coords).
+// A random direction axis is chosen; target points sorted along it; outliers
+// are re-assigned to points from the opposite end, creating asymmetric error
+// that properly breaks SVD registration.
 export function corruptCorrespondences(source, target, ratio) {
   const N = source.length;
   const numOutliers = Math.round(N * ratio);
@@ -171,36 +175,40 @@ export function corruptCorrespondences(source, target, ratio) {
   }
   const outlierIndices = new Set(indices.slice(0, numOutliers));
 
-  // Compute bounding box of target for random point generation
-  let minB = [Infinity, Infinity, Infinity];
-  let maxB = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < N; i++) {
-    for (let d = 0; d < 3; d++) {
-      if (target[i][d] < minB[d]) minB[d] = target[i][d];
-      if (target[i][d] > maxB[d]) maxB[d] = target[i][d];
-    }
-  }
-  const range = [maxB[0] - minB[0], maxB[1] - minB[1], maxB[2] - minB[2]];
-  const center = [(minB[0] + maxB[0]) / 2, (minB[1] + maxB[1]) / 2, (minB[2] + maxB[2]) / 2];
+  // Random bias direction (unit vector)
+  let dx = Math.random() - 0.5, dy = Math.random() - 0.5, dz = Math.random() - 0.5;
+  const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+  dx /= len; dy /= len; dz /= len;
 
-  // Random bias offset so outliers are NOT zero-mean relative to centroid.
-  // Without this, symmetric random outliers cancel out in H = Σ p_i q_i^T
-  // and inlier signal dominates even at high outlier ratios.
-  const bias = [
-    (Math.random() - 0.5) * range[0] * 4,
-    (Math.random() - 0.5) * range[1] * 4,
-    (Math.random() - 0.5) * range[2] * 4,
-  ];
+  // Sort target indices by projection onto bias direction
+  const projections = target.map((p, i) => ({
+    i, proj: p[0]*dx + p[1]*dy + p[2]*dz
+  }));
+  projections.sort((a, b) => a.proj - b.proj);
+
+  // For each outlier, assign a target point from the opposite end
+  // (high-proj source → low-proj target, and vice versa)
+  const outlierSrcIndices = [];
+  for (let i = 0; i < N; i++) {
+    if (outlierIndices.has(i)) outlierSrcIndices.push(i);
+  }
+  // Sort outlier source indices by their projection (ascending)
+  outlierSrcIndices.sort((a, b) =>
+    (source[a][0]*dx + source[a][1]*dy + source[a][2]*dz) -
+    (source[b][0]*dx + source[b][1]*dy + source[b][2]*dz)
+  );
+  // Pick target points from the opposite end of the sorted list
+  const farTargetIndices = projections.slice(-numOutliers).reverse().map(p => p.i);
+
+  const reassignMap = new Map();
+  for (let k = 0; k < outlierSrcIndices.length; k++) {
+    reassignMap.set(outlierSrcIndices[k], farTargetIndices[k]);
+  }
 
   const corruptedTarget = target.map((pt, i) => {
     if (!outlierIndices.has(i)) return pt;
     outlierMask[i] = true;
-    // Generate random point with asymmetric bias to break SVD robustness
-    return [
-      center[0] + bias[0] + (Math.random() - 0.5) * range[0] * 2,
-      center[1] + bias[1] + (Math.random() - 0.5) * range[1] * 2,
-      center[2] + bias[2] + (Math.random() - 0.5) * range[2] * 2,
-    ];
+    return target[reassignMap.get(i)];
   });
 
   return { corruptedTarget, outlierMask };
