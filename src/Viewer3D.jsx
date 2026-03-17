@@ -49,18 +49,27 @@ function PointCloud({ points, color, size = 3 }) {
   );
 }
 
-function CorrespondenceLines({ source, target, outlierMask }) {
+function CorrespondenceLines({ source, target, outlierMask, corruptedTarget }) {
   const { inlierGeom, outlierGeom } = useMemo(() => {
     if (!source || !target) return { inlierGeom: null, outlierGeom: null };
     const n = Math.min(source.length, target.length);
     const inlierPos = [];
     const outlierPos = [];
     for (let i = 0; i < n; i++) {
-      const arr = (outlierMask && outlierMask[i]) ? outlierPos : inlierPos;
-      arr.push(
-        source[i][0], source[i][1], source[i][2],
-        target[i][0], target[i][1], target[i][2]
-      );
+      if (outlierMask && outlierMask[i]) {
+        // Red line: source → corrupted (wrong) target point
+        const ct = corruptedTarget || target;
+        outlierPos.push(
+          source[i][0], source[i][1], source[i][2],
+          ct[i][0], ct[i][1], ct[i][2]
+        );
+      } else {
+        // Green line: source → true target point
+        inlierPos.push(
+          source[i][0], source[i][1], source[i][2],
+          target[i][0], target[i][1], target[i][2]
+        );
+      }
     }
     const makeGeom = (data) => {
       if (data.length === 0) return null;
@@ -69,7 +78,7 @@ function CorrespondenceLines({ source, target, outlierMask }) {
       return geom;
     };
     return { inlierGeom: makeGeom(inlierPos), outlierGeom: makeGeom(outlierPos) };
-  }, [source, target, outlierMask]);
+  }, [source, target, outlierMask, corruptedTarget]);
 
   return (
     <>
@@ -87,7 +96,7 @@ function CorrespondenceLines({ source, target, outlierMask }) {
   );
 }
 
-export default function Viewer3D({ original, transformed, registered, outlierMask, pointSize = 3 }) {
+export default function Viewer3D({ original, transformed, registered, outlierMask, corruptedTarget, pointSize = 3 }) {
   return (
     <Canvas
       camera={{ position: [0, 0, 3], fov: 50, near: 0.01, far: 100 }}
@@ -105,7 +114,7 @@ export default function Viewer3D({ original, transformed, registered, outlierMas
       <PointCloud points={registered} color="#44aaff" size={pointSize + 1} />
 
       {/* Correspondence lines: from transformed (red) to original (green) */}
-      {transformed && <CorrespondenceLines source={transformed} target={original} outlierMask={outlierMask} />}
+      {transformed && <CorrespondenceLines source={transformed} target={original} outlierMask={outlierMask} corruptedTarget={corruptedTarget} />}
 
       <OrbitControls makeDefault enableDamping dampingFactor={0.1} />
       <GizmoHelper alignment="bottom-right" margin={[60, 60]}>

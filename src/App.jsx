@@ -19,6 +19,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [outlierRatio, setOutlierRatio] = useState(0);
   const [outlierMask, setOutlierMask] = useState(null);
+  const [corruptedTarget, setCorruptedTarget] = useState(null);
   const [pointSize, setPointSize] = useState(3);
 
   useEffect(() => {
@@ -73,18 +74,20 @@ function App() {
     setRegResult(null);
     setShowMath(false);
     setOutlierMask(null);
+    setCorruptedTarget(null);
   }, [models, selectedModel, rotation, translation]);
 
   const runRegistration = useCallback((ratio) => {
     if (!transformed) return;
     const original = models[selectedModel];
-    const { corruptedTarget, outlierMask: mask } = corruptCorrespondences(
+    const { corruptedTarget: ct, outlierMask: mask } = corruptCorrespondences(
       transformed, original, ratio / 100
     );
-    const result = registerSVD(transformed, corruptedTarget);
+    const result = registerSVD(transformed, ct);
     setRegistered(result.registered);
     setRegResult(result);
     setOutlierMask(mask);
+    setCorruptedTarget(ct);
     setShowMath(true);
   }, [models, selectedModel, transformed]);
 
@@ -123,6 +126,7 @@ function App() {
             transformed={transformed}
             registered={registered}
             outlierMask={outlierMask}
+            corruptedTarget={corruptedTarget}
             pointSize={pointSize}
           />
           {models[selectedModel] && (
