@@ -40,7 +40,7 @@ export default function ControlPanel({
   selectedModel, onModelChange,
   rotation, translation,
   onRotationChange, onTranslationChange,
-  onApply, onRandom, onRegister,
+  onRandom, onRegister,
   hasTransformed,
   outlierRatio, onOutlierRatioChange,
   pointSize, onPointSizeChange,
@@ -124,9 +124,6 @@ export default function ControlPanel({
       <div className="section buttons">
         <button className="btn btn-random" onClick={onRandom}>
           Random R, t
-        </button>
-        <button className="btn btn-apply" onClick={onApply}>
-          Apply Transform
         </button>
         <button
           className="btn btn-register"

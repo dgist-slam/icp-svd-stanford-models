@@ -44,7 +44,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    setTransformed(null);
     setRegistered(null);
     setRegResult(null);
     setShowMath(false);
@@ -52,6 +51,21 @@ function App() {
     setTranslation([0, 0, 0]);
     setNnCorrespondences(null);
   }, [selectedModel]);
+
+  // Auto-compute transformed whenever rotation/translation/model changes
+  useEffect(() => {
+    const points = models[selectedModel];
+    if (!points) { setTransformed(null); return; }
+    const R = eulerToRotation(rotation[0], rotation[1], rotation[2]);
+    const moved = applyTransform(points, R, translation);
+    setTransformed(moved);
+    setRegistered(null);
+    setRegResult(null);
+    setShowMath(false);
+    setOutlierMask(null);
+    setCorruptedTarget(null);
+    setNnCorrespondences(null);
+  }, [models, selectedModel, rotation, translation]);
 
   const handleRandom = useCallback(() => {
     const rand = (lo, hi) => lo + Math.random() * (hi - lo);
@@ -66,21 +80,6 @@ function App() {
       +rand(-0.5, 0.5).toFixed(2),
     ]);
   }, []);
-
-  const handleApply = useCallback(() => {
-    const points = models[selectedModel];
-    if (!points) return;
-    const R = eulerToRotation(rotation[0], rotation[1], rotation[2]);
-    const t = translation;
-    const moved = applyTransform(points, R, t);
-    setTransformed(moved);
-    setRegistered(null);
-    setRegResult(null);
-    setShowMath(false);
-    setOutlierMask(null);
-    setCorruptedTarget(null);
-    setNnCorrespondences(null);
-  }, [models, selectedModel, rotation, translation]);
 
   const runKnownRegistration = useCallback((ratio) => {
     if (!transformed) return;
@@ -167,7 +166,6 @@ function App() {
           translation={translation}
           onRotationChange={setRotation}
           onTranslationChange={setTranslation}
-          onApply={handleApply}
           onRandom={handleRandom}
           onRegister={handleRegister}
           hasTransformed={!!transformed}
