@@ -15,7 +15,7 @@ function App() {
   const [transformed, setTransformed] = useState(null);
   const [registered, setRegistered] = useState(null);
   const [regResult, setRegResult] = useState(null);
-  const [showMath, setShowMath] = useState(false);
+  const [showMath, setShowMath] = useState(true);
   const [loading, setLoading] = useState(true);
   const [outlierRatio, setOutlierRatio] = useState(0);
   const [outlierMask, setOutlierMask] = useState(null);
@@ -52,7 +52,6 @@ function App() {
   useEffect(() => {
     setRegistered(null);
     setRegResult(null);
-    setShowMath(false);
     setRotation([0, 0, 0]);
     setTranslation([0, 0, 0]);
     setNnCorrespondences(null);
@@ -67,7 +66,6 @@ function App() {
     setTransformed(moved);
     setRegistered(null);
     setRegResult(null);
-    setShowMath(false);
     setOutlierMask(null);
     setCorruptedTarget(null);
     setNnCorrespondences(null);

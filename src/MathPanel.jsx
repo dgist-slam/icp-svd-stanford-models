@@ -23,10 +23,6 @@ function diagTex(s, digits = 4) {
 }
 
 export default function MathPanel({ result, onClose }) {
-  if (!result) return null;
-
-  const { R, t, H, U, S, V, centroidP, centroidQ, error } = result;
-
   return (
     <div className="math-panel" onWheel={e => e.stopPropagation()}>
       <div className="math-header">
@@ -34,6 +30,13 @@ export default function MathPanel({ result, onClose }) {
         <button className="btn-close" onClick={onClose}>&times;</button>
       </div>
       <div className="math-content">
+      {!result ? (
+        <div className="math-step">
+          <p style={{ color: '#666', fontSize: 13 }}>Run registration to see the SVD math breakdown.</p>
+        </div>
+      ) : (() => {
+        const { R, t, H, U, S, V, centroidP, centroidQ, error } = result;
+        return (<>
 
         <div className="math-step">
           <div className="step-label">Step 1: Centroids</div>
@@ -81,6 +84,8 @@ export default function MathPanel({ result, onClose }) {
           } />
         </div>
 
+        </>);
+      })()}
       </div>
     </div>
   );
