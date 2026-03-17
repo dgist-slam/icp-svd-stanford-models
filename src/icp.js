@@ -180,18 +180,26 @@ export function corruptCorrespondences(source, target, ratio) {
       if (target[i][d] > maxB[d]) maxB[d] = target[i][d];
     }
   }
-  // Expand bounds by 50% so outliers clearly land outside the model
   const range = [maxB[0] - minB[0], maxB[1] - minB[1], maxB[2] - minB[2]];
   const center = [(minB[0] + maxB[0]) / 2, (minB[1] + maxB[1]) / 2, (minB[2] + maxB[2]) / 2];
+
+  // Random bias offset so outliers are NOT zero-mean relative to centroid.
+  // Without this, symmetric random outliers cancel out in H = Σ p_i q_i^T
+  // and inlier signal dominates even at high outlier ratios.
+  const bias = [
+    (Math.random() - 0.5) * range[0] * 4,
+    (Math.random() - 0.5) * range[1] * 4,
+    (Math.random() - 0.5) * range[2] * 4,
+  ];
 
   const corruptedTarget = target.map((pt, i) => {
     if (!outlierIndices.has(i)) return pt;
     outlierMask[i] = true;
-    // Generate a completely random 3D point in expanded bounding box
+    // Generate random point with asymmetric bias to break SVD robustness
     return [
-      center[0] + (Math.random() - 0.5) * range[0] * 3,
-      center[1] + (Math.random() - 0.5) * range[1] * 3,
-      center[2] + (Math.random() - 0.5) * range[2] * 3,
+      center[0] + bias[0] + (Math.random() - 0.5) * range[0] * 2,
+      center[1] + bias[1] + (Math.random() - 0.5) * range[1] * 2,
+      center[2] + bias[2] + (Math.random() - 0.5) * range[2] * 2,
     ];
   });
 
