@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Viewer3D from './Viewer3D';
 import ControlPanel from './ControlPanel';
 import MathPanel from './MathPanel';
-import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences } from './icp';
+import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences, runICP } from './icp';
 import './App.css';
 
 const MODEL_NAMES = ['bunny', 'dragon', 'happy_buddha', 'armadillo', 'drill'];
@@ -21,6 +21,9 @@ function App() {
   const [outlierMask, setOutlierMask] = useState(null);
   const [corruptedTarget, setCorruptedTarget] = useState(null);
   const [pointSize, setPointSize] = useState(3);
+  const [mode, setMode] = useState('known');       // 'known' | 'unknown'
+  const [maxRange, setMaxRange] = useState(0.5);
+  const [nnCorrespondences, setNnCorrespondences] = useState(null);
 
   useEffect(() => {
     async function loadAll() {
@@ -47,6 +50,7 @@ function App() {
     setShowMath(false);
     setRotation([0, 0, 0]);
     setTranslation([0, 0, 0]);
+    setNnCorrespondences(null);
   }, [selectedModel]);
 
   const handleRandom = useCallback(() => {
@@ -75,9 +79,10 @@ function App() {
     setShowMath(false);
     setOutlierMask(null);
     setCorruptedTarget(null);
+    setNnCorrespondences(null);
   }, [models, selectedModel, rotation, translation]);
 
-  const runRegistration = useCallback((ratio) => {
+  const runKnownRegistration = useCallback((ratio) => {
     if (!transformed) return;
     const original = models[selectedModel];
     const { corruptedTarget: ct, outlierMask: mask } = corruptCorrespondences(
@@ -88,16 +93,33 @@ function App() {
     setRegResult(result);
     setOutlierMask(mask);
     setCorruptedTarget(ct);
+    setNnCorrespondences(null);
     setShowMath(true);
   }, [models, selectedModel, transformed]);
 
-  const handleRegister = useCallback(() => {
-    runRegistration(outlierRatio);
-  }, [runRegistration, outlierRatio]);
+  const runUnknownRegistration = useCallback(() => {
+    if (!transformed) return;
+    const original = models[selectedModel];
+    const icpResult = runICP(transformed, original, maxRange);
+    setRegistered(icpResult.registered);
+    setRegResult(icpResult.result);
+    setOutlierMask(null);
+    setCorruptedTarget(null);
+    setNnCorrespondences(icpResult.correspondences);
+    setShowMath(true);
+  }, [models, selectedModel, transformed, maxRange]);
 
-  // Re-run registration when outlier ratio changes (if already registered)
+  const handleRegister = useCallback(() => {
+    if (mode === 'known') {
+      runKnownRegistration(outlierRatio);
+    } else {
+      runUnknownRegistration();
+    }
+  }, [mode, runKnownRegistration, runUnknownRegistration, outlierRatio]);
+
+  // Re-run registration when outlier ratio changes (known mode, if already registered)
   useEffect(() => {
-    if (registered) runRegistration(outlierRatio);
+    if (registered && mode === 'known') runKnownRegistration(outlierRatio);
   }, [outlierRatio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
@@ -128,6 +150,8 @@ function App() {
             outlierMask={outlierMask}
             corruptedTarget={corruptedTarget}
             pointSize={pointSize}
+            mode={mode}
+            nnCorrespondences={nnCorrespondences}
           />
           {models[selectedModel] && (
             <div className="point-count">
@@ -151,6 +175,10 @@ function App() {
           onOutlierRatioChange={setOutlierRatio}
           pointSize={pointSize}
           onPointSizeChange={setPointSize}
+          mode={mode}
+          onModeChange={setMode}
+          maxRange={maxRange}
+          onMaxRangeChange={setMaxRange}
         />
       </div>
     </div>

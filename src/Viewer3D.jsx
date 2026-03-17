@@ -96,7 +96,34 @@ function CorrespondenceLines({ source, target, outlierMask, corruptedTarget }) {
   );
 }
 
-export default function Viewer3D({ original, transformed, registered, outlierMask, corruptedTarget, pointSize = 3 }) {
+function NNCorrespondenceLines({ correspondences }) {
+  const geometry = useMemo(() => {
+    if (!correspondences || !correspondences.srcPairs || !correspondences.tgtPairs) return null;
+    const { srcPairs, tgtPairs } = correspondences;
+    const n = Math.min(srcPairs.length, tgtPairs.length);
+    if (n === 0) return null;
+    const pos = [];
+    for (let i = 0; i < n; i++) {
+      pos.push(
+        srcPairs[i][0], srcPairs[i][1], srcPairs[i][2],
+        tgtPairs[i][0], tgtPairs[i][1], tgtPairs[i][2]
+      );
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    return geom;
+  }, [correspondences]);
+
+  if (!geometry) return null;
+
+  return (
+    <lineSegments geometry={geometry}>
+      <lineBasicMaterial color="#999999" transparent opacity={0.2} depthWrite={false} />
+    </lineSegments>
+  );
+}
+
+export default function Viewer3D({ original, transformed, registered, outlierMask, corruptedTarget, pointSize = 3, mode, nnCorrespondences }) {
   return (
     <Canvas
       camera={{ position: [0, 0, 3], fov: 50, near: 0.01, far: 100 }}
@@ -113,8 +140,13 @@ export default function Viewer3D({ original, transformed, registered, outlierMas
       {/* Registered = blue */}
       <PointCloud points={registered} color="#44aaff" size={pointSize + 1} />
 
-      {/* Correspondence lines: from transformed (red) to original (green) */}
-      {transformed && <CorrespondenceLines source={transformed} target={original} outlierMask={outlierMask} corruptedTarget={corruptedTarget} />}
+      {/* Correspondence lines */}
+      {mode === 'known' && transformed && (
+        <CorrespondenceLines source={transformed} target={original} outlierMask={outlierMask} corruptedTarget={corruptedTarget} />
+      )}
+      {mode === 'unknown' && (
+        <NNCorrespondenceLines correspondences={nnCorrespondences} />
+      )}
 
       <OrbitControls makeDefault enableDamping dampingFactor={0.1} />
       <GizmoHelper alignment="bottom-right" margin={[60, 60]}>

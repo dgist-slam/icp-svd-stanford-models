@@ -280,3 +280,80 @@ export function registerSVD(source, target) {
     R, t, H, U, S, V, centroidP, centroidQ, error, registered
   };
 }
+
+// --- NN-based correspondence finding ---
+// For each source point, find the nearest target point within maxRange.
+// Returns only matched pairs (unmatched source points are skipped).
+export function findNNCorrespondences(source, target, maxRange) {
+  const maxR2 = maxRange * maxRange;
+  const srcPairs = [];
+  const tgtPairs = [];
+  for (let i = 0; i < source.length; i++) {
+    let bestDist2 = Infinity;
+    let bestJ = -1;
+    for (let j = 0; j < target.length; j++) {
+      const dx = source[i][0] - target[j][0];
+      const dy = source[i][1] - target[j][1];
+      const dz = source[i][2] - target[j][2];
+      const d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 < bestDist2) { bestDist2 = d2; bestJ = j; }
+    }
+    if (bestDist2 <= maxR2 && bestJ >= 0) {
+      srcPairs.push(source[i]);
+      tgtPairs.push(target[bestJ]);
+    }
+  }
+  return { srcPairs, tgtPairs };
+}
+
+// --- Iterative Closest Point (unknown correspondences) ---
+export function runICP(source, target, maxRange, maxIter = 30) {
+  let current = source;
+  let lastError = Infinity;
+  let result = null;
+  let correspondences = null;
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    // Find NN correspondences
+    const { srcPairs, tgtPairs } = findNNCorrespondences(current, target, maxRange);
+    if (srcPairs.length < 3) break; // Not enough correspondences
+
+    // SVD registration
+    result = registerSVD(srcPairs, tgtPairs);
+
+    // Apply transform to ALL source points (not just matched ones)
+    current = applyTransform(current, result.R, result.t);
+    correspondences = { srcPairs: [...current.slice(0, srcPairs.length)], tgtPairs };
+
+    // Convergence check
+    if (Math.abs(lastError - result.error) < 1e-8) break;
+    lastError = result.error;
+  }
+
+  // Final correspondences for visualization
+  const finalCorr = findNNCorrespondences(current, target, maxRange);
+
+  // Compute final MSE against target (using original source)
+  let finalError = 0;
+  for (let i = 0; i < current.length; i++) {
+    // Find NN for error computation
+    let bestDist2 = Infinity;
+    for (let j = 0; j < target.length; j++) {
+      const dx = current[i][0] - target[j][0];
+      const dy = current[i][1] - target[j][1];
+      const dz = current[i][2] - target[j][2];
+      const d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 < bestDist2) bestDist2 = d2;
+    }
+    finalError += bestDist2;
+  }
+  finalError /= current.length;
+
+  return {
+    registered: current,
+    result, // last SVD result (for math panel)
+    error: finalError,
+    correspondences: finalCorr,
+    numCorrespondences: finalCorr.srcPairs.length,
+  };
+}

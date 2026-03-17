@@ -44,6 +44,8 @@ export default function ControlPanel({
   hasTransformed,
   outlierRatio, onOutlierRatioChange,
   pointSize, onPointSizeChange,
+  mode, onModeChange,
+  maxRange, onMaxRangeChange,
 }) {
   const setR = (idx, val) => {
     const r = [...rotation];
@@ -71,6 +73,24 @@ export default function ControlPanel({
       </div>
 
       <div className="section">
+        <h3>Mode</h3>
+        <div className="mode-toggle">
+          <button
+            className={`mode-btn ${mode === 'known' ? 'active' : ''}`}
+            onClick={() => onModeChange('known')}
+          >
+            Known Corr.
+          </button>
+          <button
+            className={`mode-btn ${mode === 'unknown' ? 'active' : ''}`}
+            onClick={() => onModeChange('unknown')}
+          >
+            Unknown Corr.
+          </button>
+        </div>
+      </div>
+
+      <div className="section">
         <h3>Rotation (deg)</h3>
         <SliderRow label="Rx" value={rotation[0]} onChange={v => setR(0, v)} min={-180} max={180} step={1} />
         <SliderRow label="Ry" value={rotation[1]} onChange={v => setR(1, v)} min={-180} max={180} step={1} />
@@ -84,10 +104,17 @@ export default function ControlPanel({
         <SliderRow label="tz" value={translation[2]} onChange={v => setT(2, v)} min={-1} max={1} step={0.01} />
       </div>
 
-      <div className="section">
-        <h3>Outliers</h3>
-        <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={99} step={1} />
-      </div>
+      {mode === 'known' ? (
+        <div className="section">
+          <h3>Outliers</h3>
+          <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={99} step={1} />
+        </div>
+      ) : (
+        <div className="section">
+          <h3>Max Search Range</h3>
+          <SliderRow label="r" value={maxRange} onChange={onMaxRangeChange} min={0.01} max={2.0} step={0.01} />
+        </div>
+      )}
 
       <div className="section">
         <h3>Point Size</h3>
@@ -106,7 +133,7 @@ export default function ControlPanel({
           onClick={onRegister}
           disabled={!hasTransformed}
         >
-          Register (SVD)
+          {mode === 'known' ? 'Register (SVD)' : 'Register (ICP)'}
         </button>
       </div>
 
@@ -115,8 +142,14 @@ export default function ControlPanel({
         <div className="legend-item"><span className="dot green" /> Original (Target)</div>
         <div className="legend-item"><span className="dot magenta" /> Transformed (Source)</div>
         <div className="legend-item"><span className="dot blue" /> Registered (Result)</div>
-        <div className="legend-item"><span className="line green" /> True Correspondences</div>
-        <div className="legend-item"><span className="line red" /> False Correspondences</div>
+        {mode === 'known' ? (
+          <>
+            <div className="legend-item"><span className="line green" /> True Correspondences</div>
+            <div className="legend-item"><span className="line red" /> False Correspondences</div>
+          </>
+        ) : (
+          <div className="legend-item"><span className="line gray" /> NN Correspondences</div>
+        )}
       </div>
     </div>
   );
