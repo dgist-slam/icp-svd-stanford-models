@@ -75,19 +75,19 @@ function CorrespondenceLines({ source, target, outlierMask }) {
     <>
       {inlierGeom && (
         <lineSegments geometry={inlierGeom}>
-          <lineBasicMaterial color="#aaaaaa" transparent opacity={0.15} depthWrite={false} />
+          <lineBasicMaterial color="#00cc66" transparent opacity={0.25} depthWrite={false} />
         </lineSegments>
       )}
       {outlierGeom && (
         <lineSegments geometry={outlierGeom}>
-          <lineBasicMaterial color="#ff8800" transparent opacity={0.4} depthWrite={false} />
+          <lineBasicMaterial color="#ff3333" transparent opacity={0.4} depthWrite={false} />
         </lineSegments>
       )}
     </>
   );
 }
 
-export default function Viewer3D({ original, transformed, registered, outlierMask }) {
+export default function Viewer3D({ original, transformed, registered, outlierMask, pointSize = 3 }) {
   return (
     <Canvas
       camera={{ position: [0, 0, 3], fov: 50, near: 0.01, far: 100 }}
@@ -96,13 +96,13 @@ export default function Viewer3D({ original, transformed, registered, outlierMas
       <ambientLight intensity={0.5} />
 
       {/* Original = green */}
-      <PointCloud points={original} color="#00ee77" size={3} />
+      <PointCloud points={original} color="#00ee77" size={pointSize} />
 
-      {/* Transformed = red */}
-      <PointCloud points={transformed} color="#ff4455" size={3} />
+      {/* Transformed = magenta */}
+      <PointCloud points={transformed} color="#dd44dd" size={pointSize} />
 
       {/* Registered = blue */}
-      <PointCloud points={registered} color="#44aaff" size={4} />
+      <PointCloud points={registered} color="#44aaff" size={pointSize + 1} />
 
       {/* Correspondence lines: from transformed (red) to original (green) */}
       {transformed && <CorrespondenceLines source={transformed} target={original} outlierMask={outlierMask} />}

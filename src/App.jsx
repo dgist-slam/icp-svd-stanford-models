@@ -19,6 +19,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [outlierRatio, setOutlierRatio] = useState(0);
   const [outlierMask, setOutlierMask] = useState(null);
+  const [pointSize, setPointSize] = useState(3);
 
   useEffect(() => {
     async function loadAll() {
@@ -113,6 +114,7 @@ function App() {
             transformed={transformed}
             registered={registered}
             outlierMask={outlierMask}
+            pointSize={pointSize}
           />
           {models[selectedModel] && (
             <div className="point-count">
@@ -134,6 +136,8 @@ function App() {
           hasTransformed={!!transformed}
           outlierRatio={outlierRatio}
           onOutlierRatioChange={setOutlierRatio}
+          pointSize={pointSize}
+          onPointSizeChange={setPointSize}
         />
       </div>
     </div>

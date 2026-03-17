@@ -43,6 +43,7 @@ export default function ControlPanel({
   onApply, onRandom, onRegister,
   hasTransformed,
   outlierRatio, onOutlierRatioChange,
+  pointSize, onPointSizeChange,
 }) {
   const setR = (idx, val) => {
     const r = [...rotation];
@@ -88,6 +89,11 @@ export default function ControlPanel({
         <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={80} step={1} />
       </div>
 
+      <div className="section">
+        <h3>Point Size</h3>
+        <SliderRow label="px" value={pointSize} onChange={onPointSizeChange} min={1} max={10} step={1} />
+      </div>
+
       <div className="section buttons">
         <button className="btn btn-random" onClick={onRandom}>
           Random R, t
@@ -107,10 +113,10 @@ export default function ControlPanel({
       <div className="section legend">
         <h3>Legend</h3>
         <div className="legend-item"><span className="dot green" /> Original (Target)</div>
-        <div className="legend-item"><span className="dot red" /> Transformed (Source)</div>
+        <div className="legend-item"><span className="dot magenta" /> Transformed (Source)</div>
         <div className="legend-item"><span className="dot blue" /> Registered (Result)</div>
-        <div className="legend-item"><span className="line gray" /> Correspondences</div>
-        <div className="legend-item"><span className="line orange" /> False Correspondences</div>
+        <div className="legend-item"><span className="line green" /> True Correspondences</div>
+        <div className="legend-item"><span className="line red" /> False Correspondences</div>
       </div>
     </div>
   );
