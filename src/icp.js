@@ -155,6 +155,34 @@ export function svd3x3(A_in) {
   return { U: Usorted, S, V: Vsorted };
 }
 
+// --- Corrupt correspondences (introduce false matches) ---
+export function corruptCorrespondences(source, target, ratio) {
+  const N = source.length;
+  const numOutliers = Math.round(N * ratio);
+  const outlierMask = new Array(N).fill(false);
+
+  if (numOutliers === 0) return { corruptedTarget: target, outlierMask };
+
+  // Pick random indices to corrupt
+  const indices = Array.from({ length: N }, (_, i) => i);
+  for (let i = N - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const outlierIndices = new Set(indices.slice(0, numOutliers));
+
+  const corruptedTarget = target.map((pt, i) => {
+    if (!outlierIndices.has(i)) return pt;
+    outlierMask[i] = true;
+    // Assign a random different target point
+    let ri;
+    do { ri = Math.floor(Math.random() * N); } while (ri === i);
+    return target[ri];
+  });
+
+  return { corruptedTarget, outlierMask };
+}
+
 // --- SVD-based point cloud registration ---
 // Given source P and target Q with known correspondences (P[i] <-> Q[i]),
 // find R, t such that R*P[i] + t ≈ Q[i]

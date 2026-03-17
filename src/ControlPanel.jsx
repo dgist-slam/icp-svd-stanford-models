@@ -42,6 +42,7 @@ export default function ControlPanel({
   onRotationChange, onTranslationChange,
   onApply, onRandom, onRegister,
   hasTransformed,
+  outlierRatio, onOutlierRatioChange,
 }) {
   const setR = (idx, val) => {
     const r = [...rotation];
@@ -82,6 +83,11 @@ export default function ControlPanel({
         <SliderRow label="tz" value={translation[2]} onChange={v => setT(2, v)} min={-1} max={1} step={0.01} />
       </div>
 
+      <div className="section">
+        <h3>Outliers</h3>
+        <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={80} step={1} />
+      </div>
+
       <div className="section buttons">
         <button className="btn btn-random" onClick={onRandom}>
           Random R, t
@@ -104,6 +110,7 @@ export default function ControlPanel({
         <div className="legend-item"><span className="dot red" /> Transformed (Source)</div>
         <div className="legend-item"><span className="dot blue" /> Registered (Result)</div>
         <div className="legend-item"><span className="line gray" /> Correspondences</div>
+        <div className="legend-item"><span className="line orange" /> False Correspondences</div>
       </div>
     </div>
   );

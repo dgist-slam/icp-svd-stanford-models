@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Viewer3D from './Viewer3D';
 import ControlPanel from './ControlPanel';
 import MathPanel from './MathPanel';
-import { eulerToRotation, applyTransform, registerSVD } from './icp';
+import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences } from './icp';
 import './App.css';
 
 const MODEL_NAMES = ['bunny', 'dragon', 'happy_buddha', 'armadillo', 'drill'];
@@ -17,6 +17,8 @@ function App() {
   const [regResult, setRegResult] = useState(null);
   const [showMath, setShowMath] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [outlierRatio, setOutlierRatio] = useState(0);
+  const [outlierMask, setOutlierMask] = useState(null);
 
   useEffect(() => {
     async function loadAll() {
@@ -69,16 +71,21 @@ function App() {
     setRegistered(null);
     setRegResult(null);
     setShowMath(false);
+    setOutlierMask(null);
   }, [models, selectedModel, rotation, translation]);
 
   const handleRegister = useCallback(() => {
     if (!transformed) return;
     const original = models[selectedModel];
-    const result = registerSVD(transformed, original);
+    const { corruptedTarget, outlierMask: mask } = corruptCorrespondences(
+      transformed, original, outlierRatio / 100
+    );
+    const result = registerSVD(transformed, corruptedTarget);
     setRegistered(result.registered);
     setRegResult(result);
+    setOutlierMask(mask);
     setShowMath(true);
-  }, [models, selectedModel, transformed]);
+  }, [models, selectedModel, transformed, outlierRatio]);
 
   if (loading) {
     return (
@@ -105,6 +112,7 @@ function App() {
             original={models[selectedModel]}
             transformed={transformed}
             registered={registered}
+            outlierMask={outlierMask}
           />
           {models[selectedModel] && (
             <div className="point-count">
@@ -124,6 +132,8 @@ function App() {
           onRandom={handleRandom}
           onRegister={handleRegister}
           hasTransformed={!!transformed}
+          outlierRatio={outlierRatio}
+          onOutlierRatioChange={setOutlierRatio}
         />
       </div>
     </div>
