@@ -171,13 +171,28 @@ export function corruptCorrespondences(source, target, ratio) {
   }
   const outlierIndices = new Set(indices.slice(0, numOutliers));
 
+  // Compute bounding box of target for random point generation
+  let minB = [Infinity, Infinity, Infinity];
+  let maxB = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < N; i++) {
+    for (let d = 0; d < 3; d++) {
+      if (target[i][d] < minB[d]) minB[d] = target[i][d];
+      if (target[i][d] > maxB[d]) maxB[d] = target[i][d];
+    }
+  }
+  // Expand bounds by 50% so outliers clearly land outside the model
+  const range = [maxB[0] - minB[0], maxB[1] - minB[1], maxB[2] - minB[2]];
+  const center = [(minB[0] + maxB[0]) / 2, (minB[1] + maxB[1]) / 2, (minB[2] + maxB[2]) / 2];
+
   const corruptedTarget = target.map((pt, i) => {
     if (!outlierIndices.has(i)) return pt;
     outlierMask[i] = true;
-    // Assign a random different target point
-    let ri;
-    do { ri = Math.floor(Math.random() * N); } while (ri === i);
-    return target[ri];
+    // Generate a completely random 3D point in expanded bounding box
+    return [
+      center[0] + (Math.random() - 0.5) * range[0] * 3,
+      center[1] + (Math.random() - 0.5) * range[1] * 3,
+      center[2] + (Math.random() - 0.5) * range[2] * 3,
+    ];
   });
 
   return { corruptedTarget, outlierMask };
