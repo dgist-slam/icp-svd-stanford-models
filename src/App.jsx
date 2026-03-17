@@ -20,7 +20,7 @@ function App() {
   const [outlierRatio, setOutlierRatio] = useState(0);
   const [outlierMask, setOutlierMask] = useState(null);
   const [corruptedTarget, setCorruptedTarget] = useState(null);
-  const [pointSize, setPointSize] = useState(3);
+  const [pointSize, setPointSize] = useState(6);
   const [mode, setMode] = useState('known');       // 'known' | 'unknown'
   const [maxRange, setMaxRange] = useState(0.5);
   const [nnCorrespondences, setNnCorrespondences] = useState(null);
