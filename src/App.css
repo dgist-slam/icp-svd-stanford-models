@@ -318,6 +318,19 @@
   border-color: #6666aa;
 }
 
+.mode-ref {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6688bb;
+  text-decoration: none;
+}
+
+.mode-ref:hover {
+  color: #88aadd;
+  text-decoration: underline;
+}
+
 /* Math panel */
 .math-panel {
   width: 420px;

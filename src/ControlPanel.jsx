@@ -82,15 +82,21 @@ export default function ControlPanel({
             className={`mode-btn ${mode === 'known' ? 'active' : ''}`}
             onClick={() => onModeChange('known')}
           >
-            Known Corr.
+            Global Reg.
           </button>
           <button
             className={`mode-btn ${mode === 'unknown' ? 'active' : ''}`}
             onClick={() => onModeChange('unknown')}
           >
-            Unknown Corr.
+            ICP Reg.
           </button>
         </div>
+        <a className="mode-ref" href={mode === 'known'
+          ? 'https://www.open3d.org/docs/release/tutorial/pipelines/global_registration.html'
+          : 'https://www.open3d.org/docs/release/tutorial/pipelines/icp_registration.html'
+        } target="_blank" rel="noopener noreferrer">
+          Open3D: {mode === 'known' ? 'Global Registration' : 'ICP Registration'} &rarr;
+        </a>
       </div>
 
       <div className="section">
