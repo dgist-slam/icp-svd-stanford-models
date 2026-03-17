@@ -68,6 +68,14 @@
   font-family: monospace;
 }
 
+.icp-chart {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Control panel */
 .control-panel {
   width: 280px;

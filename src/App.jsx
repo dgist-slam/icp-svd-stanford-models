@@ -3,6 +3,7 @@ import Viewer3D from './Viewer3D';
 import ControlPanel from './ControlPanel';
 import MathPanel from './MathPanel';
 import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences, runICP, icpStep } from './icp';
+import ICPChart from './ICPChart';
 import './App.css';
 
 const MODEL_NAMES = ['bunny', 'dragon', 'happy_buddha', 'armadillo', 'drill'];
@@ -30,6 +31,18 @@ function App() {
   const [maxIter, setMaxIter] = useState(30);
   const [convThreshExp, setConvThreshExp] = useState(6); // 1e-6
   const icpPrevError = useRef(Infinity);
+  const [icpHistory, setIcpHistory] = useState([]);
+
+  function extractPoseNorms(result) {
+    if (!result) return null;
+    const { R, t } = result;
+    // rotation angle: arccos(clamp((trace(R)-1)/2, -1, 1))
+    const trace = R[0][0] + R[1][1] + R[2][2];
+    const cosAngle = Math.max(-1, Math.min(1, (trace - 1) / 2));
+    const rotDeg = Math.acos(cosAngle) * (180 / Math.PI);
+    const transNorm = Math.sqrt(t[0]*t[0] + t[1]*t[1] + t[2]*t[2]);
+    return { rotDeg, transNorm };
+  }
 
   useEffect(() => {
     async function loadAll() {
@@ -73,6 +86,7 @@ function App() {
     setIcpIter(0);
     setIcpRunning(false);
     icpPrevError.current = Infinity;
+    setIcpHistory([]);
   }, [models, selectedModel, rotation, translation]);
 
   const handleRandom = useCallback(() => {
@@ -110,6 +124,7 @@ function App() {
     setIcpCurrent(null);
     setIcpIter(0);
     icpPrevError.current = Infinity;
+    setIcpHistory([]);
     setIcpRunning(true);
   }, [transformed, icpRunning]);
 
@@ -128,6 +143,8 @@ function App() {
     setNnCorrespondences(stepResult.correspondences);
     setShowMath(true);
     icpPrevError.current = stepResult.error;
+    const norms = extractPoseNorms(stepResult.result);
+    if (norms) setIcpHistory(prev => [...prev, norms]);
   }, [models, selectedModel, transformed, icpCurrent, maxRange, icpRunning]);
 
   // Animated ICP: each tick runs one step, re-triggers via icpIter change
@@ -150,6 +167,8 @@ function App() {
       setCorruptedTarget(null);
       setNnCorrespondences(stepResult.correspondences);
       setShowMath(true);
+      const norms = extractPoseNorms(stepResult.result);
+      if (norms) setIcpHistory(prev => [...prev, norms]);
 
       const thresh = Math.pow(10, -convThreshExp);
       if (icpIter + 1 >= maxIter || Math.abs(prevErr - stepResult.error) < thresh) {
@@ -199,6 +218,9 @@ function App() {
             mode={mode}
             nnCorrespondences={nnCorrespondences}
           />
+          {mode === 'unknown' && icpHistory.length > 0 && (
+            <ICPChart history={icpHistory} />
+          )}
           {models[selectedModel] && (
             <div className="point-count">
               {models[selectedModel].length} points
