@@ -86,7 +86,7 @@ export default function ControlPanel({
 
       <div className="section">
         <h3>Outliers</h3>
-        <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={80} step={1} />
+        <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={99} step={1} />
       </div>
 
       <div className="section">
