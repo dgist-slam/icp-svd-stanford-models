@@ -110,6 +110,7 @@ export default function ControlPanel({
       {mode === 'known' ? (
         <div className="section">
           <h3>Outliers</h3>
+          <p className="section-hint">Adjust to run SVD registration with false correspondences</p>
           <SliderRow label="%" value={outlierRatio} onChange={onOutlierRatioChange} min={0} max={99} step={1} />
         </div>
       ) : (

@@ -87,6 +87,13 @@
   padding: 12px;
 }
 
+.section-hint {
+  font-size: 11px;
+  color: #777;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
 .control-panel h3 {
   font-size: 12px;
   font-weight: 600;
