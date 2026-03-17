@@ -45,6 +45,8 @@ export default function ControlPanel({
   pointSize, onPointSizeChange,
   mode, onModeChange,
   maxRange, onMaxRangeChange,
+  onRunICP, onICPStep, icpIter,
+  hasTransformed,
 }) {
   const setR = (idx, val) => {
     const r = [...rotation];
@@ -122,8 +124,18 @@ export default function ControlPanel({
 
       <div className="section buttons">
         <button className="btn btn-random" onClick={onRandom}>
-          Random R, t
+          Random R, t (Reset)
         </button>
+        {mode === 'unknown' && (
+          <>
+            <button className="btn btn-register" onClick={onRunICP} disabled={!hasTransformed}>
+              Run Full ICP
+            </button>
+            <button className="btn btn-step" onClick={onICPStep} disabled={!hasTransformed}>
+              +1 Iteration {icpIter > 0 && `(${icpIter})`}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="section legend">

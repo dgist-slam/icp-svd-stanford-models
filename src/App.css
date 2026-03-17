@@ -27,6 +27,20 @@
   margin-left: 12px;
 }
 
+.citations {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.citations span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Main layout */
 .main-layout {
   display: flex;
@@ -198,6 +212,12 @@
   color: #fff;
 }
 .btn-register:hover:not(:disabled) { background: #3377dd; }
+
+.btn-step {
+  background: #336644;
+  color: #fff;
+}
+.btn-step:hover:not(:disabled) { background: #447755; }
 
 /* Legend */
 .legend {

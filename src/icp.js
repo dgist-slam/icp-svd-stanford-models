@@ -306,6 +306,40 @@ export function findNNCorrespondences(source, target, maxRange) {
   return { srcPairs, tgtPairs };
 }
 
+// --- Single ICP iteration ---
+// Takes current source positions, finds NN, registers, returns updated positions.
+export function icpStep(current, target, maxRange) {
+  const { srcPairs, tgtPairs } = findNNCorrespondences(current, target, maxRange);
+  if (srcPairs.length < 3) return null;
+
+  const result = registerSVD(srcPairs, tgtPairs);
+  const updated = applyTransform(current, result.R, result.t);
+  const correspondences = findNNCorrespondences(updated, target, maxRange);
+
+  // Compute MSE
+  let error = 0;
+  for (let i = 0; i < updated.length; i++) {
+    let bestDist2 = Infinity;
+    for (let j = 0; j < target.length; j++) {
+      const dx = updated[i][0] - target[j][0];
+      const dy = updated[i][1] - target[j][1];
+      const dz = updated[i][2] - target[j][2];
+      const d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 < bestDist2) bestDist2 = d2;
+    }
+    error += bestDist2;
+  }
+  error /= updated.length;
+
+  return {
+    registered: updated,
+    result,
+    error,
+    correspondences,
+    numCorrespondences: correspondences.srcPairs.length,
+  };
+}
+
 // --- Iterative Closest Point (unknown correspondences) ---
 export function runICP(source, target, maxRange, maxIter = 30) {
   let current = source;

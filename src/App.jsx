@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Viewer3D from './Viewer3D';
 import ControlPanel from './ControlPanel';
 import MathPanel from './MathPanel';
-import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences, runICP } from './icp';
+import { eulerToRotation, applyTransform, registerSVD, corruptCorrespondences, runICP, icpStep } from './icp';
 import './App.css';
 
 const MODEL_NAMES = ['bunny', 'dragon', 'happy_buddha', 'armadillo', 'drill'];
@@ -24,6 +24,8 @@ function App() {
   const [mode, setMode] = useState('known');       // 'known' | 'unknown'
   const [maxRange, setMaxRange] = useState(0.5);
   const [nnCorrespondences, setNnCorrespondences] = useState(null);
+  const [icpCurrent, setIcpCurrent] = useState(null);  // current source positions during ICP stepping
+  const [icpIter, setIcpIter] = useState(0);
 
   useEffect(() => {
     async function loadAll() {
@@ -65,6 +67,8 @@ function App() {
     setOutlierMask(null);
     setCorruptedTarget(null);
     setNnCorrespondences(null);
+    setIcpCurrent(null);
+    setIcpIter(0);
   }, [models, selectedModel, rotation, translation]);
 
   const handleRandom = useCallback(() => {
@@ -96,26 +100,40 @@ function App() {
     setShowMath(true);
   }, [models, selectedModel, transformed]);
 
-  const runUnknownRegistration = useCallback(() => {
+  const handleRunICP = useCallback(() => {
     if (!transformed) return;
     const original = models[selectedModel];
     const icpResult = runICP(transformed, original, maxRange);
     setRegistered(icpResult.registered);
     setRegResult(icpResult.result);
+    setIcpCurrent(icpResult.registered);
+    setIcpIter(0);
     setOutlierMask(null);
     setCorruptedTarget(null);
     setNnCorrespondences(icpResult.correspondences);
     setShowMath(true);
   }, [models, selectedModel, transformed, maxRange]);
 
-  // Auto-run registration when parameters change
+  const handleICPStep = useCallback(() => {
+    if (!transformed) return;
+    const original = models[selectedModel];
+    const source = icpCurrent || transformed;
+    const stepResult = icpStep(source, original, maxRange);
+    if (!stepResult) return;
+    setRegistered(stepResult.registered);
+    setRegResult(stepResult.result);
+    setIcpCurrent(stepResult.registered);
+    setIcpIter(prev => prev + 1);
+    setOutlierMask(null);
+    setCorruptedTarget(null);
+    setNnCorrespondences(stepResult.correspondences);
+    setShowMath(true);
+  }, [models, selectedModel, transformed, icpCurrent, maxRange]);
+
+  // Auto-run registration when outlier ratio changes (known mode)
   useEffect(() => {
     if (transformed && mode === 'known') runKnownRegistration(outlierRatio);
   }, [outlierRatio]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (transformed && mode === 'unknown') runUnknownRegistration();
-  }, [maxRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -130,6 +148,10 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>ICP Registration Demo <span className="subtitle">SVD-based Point Cloud Alignment</span></h1>
+        <div className="citations">
+          <span>Algorithm: Besl & McKay, "A Method for Registration of 3-D Shapes" (1992) · Arun et al., "Least-Squares Fitting of Two 3-D Point Sets" (1987)</span>
+          <span>Data: Stanford 3D Scanning Repository</span>
+        </div>
       </header>
 
       <div className="main-layout">
@@ -171,6 +193,10 @@ function App() {
           onModeChange={setMode}
           maxRange={maxRange}
           onMaxRangeChange={setMaxRange}
+          onRunICP={handleRunICP}
+          onICPStep={handleICPStep}
+          icpIter={icpIter}
+          hasTransformed={!!transformed}
         />
       </div>
     </div>
