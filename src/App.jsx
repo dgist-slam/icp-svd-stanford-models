@@ -108,18 +108,14 @@ function App() {
     setShowMath(true);
   }, [models, selectedModel, transformed, maxRange]);
 
-  const handleRegister = useCallback(() => {
-    if (mode === 'known') {
-      runKnownRegistration(outlierRatio);
-    } else {
-      runUnknownRegistration();
-    }
-  }, [mode, runKnownRegistration, runUnknownRegistration, outlierRatio]);
-
-  // Auto-run registration when outlier ratio changes (known mode)
+  // Auto-run registration when parameters change
   useEffect(() => {
     if (transformed && mode === 'known') runKnownRegistration(outlierRatio);
   }, [outlierRatio]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (transformed && mode === 'unknown') runUnknownRegistration();
+  }, [maxRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -167,8 +163,6 @@ function App() {
           onRotationChange={setRotation}
           onTranslationChange={setTranslation}
           onRandom={handleRandom}
-          onRegister={handleRegister}
-          hasTransformed={!!transformed}
           outlierRatio={outlierRatio}
           onOutlierRatioChange={setOutlierRatio}
           pointSize={pointSize}

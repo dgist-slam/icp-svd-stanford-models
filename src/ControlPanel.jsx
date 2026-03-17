@@ -40,8 +40,7 @@ export default function ControlPanel({
   selectedModel, onModelChange,
   rotation, translation,
   onRotationChange, onTranslationChange,
-  onRandom, onRegister,
-  hasTransformed,
+  onRandom,
   outlierRatio, onOutlierRatioChange,
   pointSize, onPointSizeChange,
   mode, onModeChange,
@@ -124,13 +123,6 @@ export default function ControlPanel({
       <div className="section buttons">
         <button className="btn btn-random" onClick={onRandom}>
           Random R, t
-        </button>
-        <button
-          className="btn btn-register"
-          onClick={onRegister}
-          disabled={!hasTransformed}
-        >
-          {mode === 'known' ? 'Register (SVD)' : 'Register (ICP)'}
         </button>
       </div>
 
